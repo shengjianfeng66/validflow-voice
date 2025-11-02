@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Room, RoomEvent, TokenSource } from 'livekit-client';
 import { AppConfig } from '@/app-config';
@@ -40,12 +39,48 @@ export function useRoom(appConfig: AppConfig) {
   const tokenSource = useMemo(
     () =>
       TokenSource.custom(async () => {
+        // 1. 首先调用 /api/v1/interview/list 获取 outline 数据
+        let outline = null;
+        try {
+          const interviewListUrl = new URL('/api/v1/interview/list', window.location.origin);
+          const interviewRes = await fetch(interviewListUrl.toString(), {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (interviewRes.ok) {
+            const interviewData = await interviewRes.json();
+            outline = interviewData.outline;
+            // console.log(outline)
+          }
+        } catch (error) {
+          console.warn('Failed to fetch interview outline:', error);
+          // 继续执行，不阻断连接流程
+        }
+
+        // 2. 构造 metadata
+        const metadata = outline ? {
+          prompt_params: {
+            outline: outline
+          }
+        } : undefined;
+
+        // 3. 调用 connection-details 接口
         const url = new URL(
           process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT ?? '/api/connection-details',
           window.location.origin
         );
 
         try {
+          const roomConfig = {
+            ...(appConfig.agentName && {
+              agents: [{ agent_name: appConfig.agentName }],
+            }),
+            ...(metadata && { metadata }),
+          };
+
           const res = await fetch(url.toString(), {
             method: 'POST',
             headers: {
@@ -53,11 +88,7 @@ export function useRoom(appConfig: AppConfig) {
               'X-Sandbox-Id': appConfig.sandboxId ?? '',
             },
             body: JSON.stringify({
-              room_config: appConfig.agentName
-                ? {
-                  agents: [{ agent_name: appConfig.agentName }],
-                }
-                : undefined,
+              room_config: Object.keys(roomConfig).length > 0 ? roomConfig : undefined,
             }),
           });
           return await res.json();
@@ -75,7 +106,7 @@ export function useRoom(appConfig: AppConfig) {
     if (room.state === 'disconnected') {
       const { isPreConnectBufferEnabled } = appConfig;
       Promise.all([
-        room.localParticipant.setMicrophoneEnabled(true, undefined, {
+        room.localParticipant.setMicrophoneEnabled(false, undefined, { // 默认关闭麦克风
           preConnectBuffer: isPreConnectBufferEnabled,
         }),
         tokenSource
@@ -105,5 +136,10 @@ export function useRoom(appConfig: AppConfig) {
     setIsSessionActive(false);
   }, []);
 
-  return { room, isSessionActive, startSession, endSession };
+  return { 
+    room, 
+    isSessionActive, 
+    startSession, 
+    endSession
+  };
 }

@@ -5,9 +5,11 @@ import { Track } from 'livekit-client';
 import { useChat, useRemoteParticipants } from '@livekit/components-react';
 import { ChatTextIcon, PhoneDisconnectIcon } from '@phosphor-icons/react/dist/ssr';
 import { useSession } from '@/components/app/session-provider';
+import { useAgentMicrophoneControl } from '@/hooks/useAgentMicrophoneControl';
 import { TrackToggle } from '@/components/livekit/agent-control-bar/track-toggle';
 import { Button } from '@/components/livekit/button';
 import { Toggle } from '@/components/livekit/toggle';
+import { RecordingButton } from '@/components/livekit/recording-button/recording-button';
 import { cn } from '@/lib/utils';
 import { ChatInput } from './chat-input';
 import { UseInputControlsProps, useInputControls } from './hooks/use-input-controls';
@@ -46,6 +48,14 @@ export function AgentControlBar({
   const [chatOpen, setChatOpen] = useState(false);
   const publishPermissions = usePublishPermissions();
   const { isSessionActive, endSession } = useSession();
+  
+  // 使用录音控制 hook
+  const {
+    isAgentSpeaking,
+    isRecording,
+    canStartRecording,
+    toggleRecording,
+  } = useAgentMicrophoneControl();
 
   const {
     micTrackRef,
@@ -119,6 +129,14 @@ export function AgentControlBar({
               onActiveDeviceChange={handleAudioDeviceChange}
             />
           )}
+
+          {/* Recording Button */}
+          <RecordingButton
+            isRecording={isRecording}
+            canStartRecording={canStartRecording}
+            isAgentSpeaking={isAgentSpeaking}
+            onToggleRecording={toggleRecording}
+          />
 
           {/* Toggle Camera */}
           {visibleControls.camera && (

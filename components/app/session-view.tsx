@@ -13,8 +13,10 @@ import {
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
 import { useDebugMode } from '@/hooks/useDebug';
+import { useAgentMicrophoneControl } from '@/hooks/useAgentMicrophoneControl';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../livekit/scroll-area/scroll-area';
+import { useRemoteParticipants } from '@livekit/components-react';
 
 const MotionBottom = motion.create('div');
 
@@ -69,13 +71,21 @@ export const SessionView = ({
   useConnectionTimeout(200_000);
   useDebugMode({ enabled: IN_DEVELOPMENT });
 
+  const { isAgentSpeaking, shouldAllowUserInput} = useAgentMicrophoneControl();
   const messages = useChatMessages();
   const [chatOpen, setChatOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const participants = useRemoteParticipants();
+
+  // 参考 getAgentIdentity 逻辑：判断 Agent 是否已入会
+  const isAgentJoined =
+    participants.some((p: any) => p.isAgent === true) ||
+    participants.some((p) => typeof p.identity === 'string' && p.identity.startsWith('agent-'));
 
   const controls: ControlBarControls = {
     leave: true,
-    microphone: true,
+    microphone: shouldAllowUserInput, // 根据 agent 状态控制麦克风
+    // 如果 Agent 未入会，则不显示聊天输入
     chat: appConfig.supportsChatInput,
     camera: appConfig.supportsVideoInput,
     screenShare: appConfig.supportsVideoInput,
@@ -89,25 +99,25 @@ export const SessionView = ({
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
-
   return (
     <section className="bg-background relative z-10 h-full w-full overflow-hidden" {...props}>
-      {/* Chat Transcript */}
-      <div
-        className={cn(
-          'fixed inset-0 grid grid-cols-1 grid-rows-1',
-          !chatOpen && 'pointer-events-none'
-        )}
-      >
-        <Fade top className="absolute inset-x-4 top-0 h-40" />
-        <ScrollArea ref={scrollAreaRef} className="px-4 pt-40 pb-[150px] md:px-6 md:pb-[180px]">
-          <ChatTranscript
-            hidden={!chatOpen}
-            messages={messages}
-            className="mx-auto max-w-2xl space-y-3 transition-opacity duration-300 ease-out"
-          />
-        </ScrollArea>
-      </div>
+      {/* Chat Transcript：如果 Agent 未入会，则不渲染聊天页面 */}
+      {isAgentJoined && (
+        <div
+          className={cn(
+            'fixed inset-0 grid grid-cols-1 grid-rows-1',
+            !chatOpen && 'pointer-events-none'
+          )}
+        >
+          <Fade top className="absolute inset-x-4 top-0 h-40" />
+          <ScrollArea ref={scrollAreaRef} className="px-4 pt-40 pb-[150px] md:px-6 md:pb-[180px]">
+            <ChatTranscript
+              messages={messages}
+              className="mx-auto max-w-2xl space-y-3 transition-opacity duration-300 ease-out"
+            />
+          </ScrollArea>
+        </div>
+      )}
 
       {/* Tile Layout */}
       <TileLayout chatOpen={chatOpen} />
@@ -120,6 +130,17 @@ export const SessionView = ({
         {appConfig.isPreConnectBufferEnabled && (
           <PreConnectMessage messages={messages} className="pb-4" />
         )}
+        
+        {/* Agent Status Indicator */}
+        {isAgentSpeaking && (
+          <div className="mb-3 text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 text-sm font-medium rounded-full border border-orange-200 dark:border-orange-800/50">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+              Agent 正在说话，请稍等...
+            </div>
+          </div>
+        )}
+        
         <div className="bg-background relative mx-auto max-w-2xl pb-3 md:pb-12">
           <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
           <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />

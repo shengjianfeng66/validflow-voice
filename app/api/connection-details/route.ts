@@ -32,6 +32,10 @@ export async function POST(req: Request) {
     // Parse agent configuration from request body
     const body = await req.json();
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const metadata = body?.room_config?.metadata;
+    
+    // Debug: Log the received metadata
+    // console.log('Received metadata:', JSON.stringify(metadata, null, 2));
 
     // Generate participant token
     const participantName = 'user';
@@ -41,7 +45,8 @@ export async function POST(req: Request) {
     const participantToken = await createParticipantToken(
       { identity: participantIdentity, name: participantName },
       roomName,
-      agentName
+      agentName,
+      metadata
     );
 
     // Return connection details
@@ -66,12 +71,10 @@ export async function POST(req: Request) {
 function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
-  agentName?: string
+  agentName?: string,
+  metadata?: Record<string, string>
 ): Promise<string> {
-  const at = new AccessToken(API_KEY, API_SECRET, {
-    ...userInfo,
-    ttl: '15m',
-  });
+  const at = new AccessToken(API_KEY, API_SECRET, userInfo);
   const grant: VideoGrant = {
     room: roomName,
     roomJoin: true,
@@ -80,11 +83,21 @@ function createParticipantToken(
     canSubscribe: true,
   };
   at.addGrant(grant);
-
+  // console.log('Generated participant token for:', metadata);
+  // Set room configuration with agents and metadata
+  const roomConfig: any = {};
+  
   if (agentName) {
-    at.roomConfig = new RoomConfiguration({
-      agents: [{ agentName }],
-    });
+    roomConfig.agents = [{ agentName }];
+  }
+  
+  if (metadata) {
+    // Set metadata at room level for ctx.room.metadata access
+    roomConfig.metadata = JSON.stringify(metadata);
+  }
+  
+  if (Object.keys(roomConfig).length > 0) {
+    at.roomConfig = new RoomConfiguration(roomConfig);
   }
 
   return at.toJwt();
