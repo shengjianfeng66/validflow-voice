@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Room, RoomEvent, TokenSource } from 'livekit-client';
 import { AppConfig } from '@/app-config';
@@ -54,8 +55,8 @@ export function useRoom(appConfig: AppConfig) {
             body: JSON.stringify({
               room_config: appConfig.agentName
                 ? {
-                    agents: [{ agent_name: appConfig.agentName }],
-                  }
+                  agents: [{ agent_name: appConfig.agentName }],
+                }
                 : undefined,
             }),
           });
