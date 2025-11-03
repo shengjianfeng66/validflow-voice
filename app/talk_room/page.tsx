@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
-import { getAppConfig } from '@/lib/utils';
 import { TalkRoomApp } from '@/components/app/talk-room-app';
+import { getAppConfig } from '@/lib/utils';
 
 export default async function TalkRoomPage() {
   const headersList = await headers();

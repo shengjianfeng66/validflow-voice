@@ -1,11 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useVoiceAssistant, useRoomContext } from '@livekit/components-react';
-import { ConnectionState, Room, RoomEvent } from 'livekit-client';
+import { useCallback, useEffect, useState } from 'react';
+import { ConnectionState, LocalTrackPublication, RoomEvent } from 'livekit-client';
+import { useRoomContext, useVoiceAssistant } from '@livekit/components-react';
 
 export function useAgentMicrophoneControl() {
   const room = useRoomContext();
   const { state: agentState } = useVoiceAssistant();
-  const [agentIdentity, setAgentIdentity] = useState('');
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [canStartRecording, setCanStartRecording] = useState(false);
@@ -15,22 +14,23 @@ export function useAgentMicrophoneControl() {
   // 检查麦克风权限
   const checkMicrophonePermission = useCallback(async () => {
     try {
-      const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      const permission = await navigator.permissions.query({
+        name: 'microphone' as PermissionName,
+      });
       if (permission.state === 'denied') {
         return false;
       }
-      
+
       // 尝试获取媒体设备
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // 清理
+      stream.getTracks().forEach((track) => track.stop()); // 清理
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }, []);
 
   useEffect(() => {
-    
     const isSpeaking = agentState === 'speaking';
     setIsAgentSpeaking(isSpeaking);
 
@@ -63,8 +63,8 @@ export function useAgentMicrophoneControl() {
     if (!room || room.state !== ConnectionState.Connected) return undefined;
     let id: string | undefined;
     // 优先使用带有 isAgent 标记的参与者（如果 SDK 暴露）
-    room.remoteParticipants.forEach((p: any) => {
-      if (!id && (p.isAgent === true)) {
+    room.remoteParticipants.forEach((p) => {
+      if (!id && p.isAgent === true) {
         id = p.identity as string;
       }
     });
@@ -95,22 +95,16 @@ export function useAgentMicrophoneControl() {
       setIsRecording(true);
       try {
         await room.localParticipant.setMicrophoneEnabled(true);
-        // 发布成功后做一次本地校验，帮助定位是否真的有音轨上行
-        const publishedCount = room.localParticipant
-          .getTrackPublications()
-          .filter((p) => p.track && p.track.kind === 'audio').length;
-
-        // 再做一次延迟校验，避免异步发布导致即时统计为 0
-        setTimeout(() => {
-          const delayedCount = room.localParticipant
-            .getTrackPublications()
-            .filter((p) => p.track && p.track.kind === 'audio').length;
-        }, 300);
 
         // 使用动态查询的方式获取 agent identity，避免未初始化的状态变量
         const destIdentity = getAgentIdentity();
+
         if (destIdentity && room.localParticipant) {
-          await room.localParticipant.performRpc({ destinationIdentity: destIdentity, method: "start_turn", payload: "" });
+          await room.localParticipant.performRpc({
+            destinationIdentity: destIdentity,
+            method: 'start_turn',
+            payload: '',
+          });
         } else {
           console.warn('🎤 Could not resolve agent identity to send start_turn RPC');
         }
@@ -119,7 +113,12 @@ export function useAgentMicrophoneControl() {
         console.error('🎤 Failed to enable microphone or send RPC:', error);
       }
     } else {
-      console.log('🎤 Cannot start recording - canStartRecording:', canStartRecording, 'isRecording:', isRecording);
+      console.log(
+        '🎤 Cannot start recording - canStartRecording:',
+        canStartRecording,
+        'isRecording:',
+        isRecording
+      );
     }
   }, [canStartRecording, isRecording, room, checkMicrophonePermission, getAgentIdentity]);
 
@@ -134,7 +133,11 @@ export function useAgentMicrophoneControl() {
       }
       const agentIdentity = getAgentIdentity();
       if (agentIdentity && room.localParticipant) {
-        await room.localParticipant.performRpc({ destinationIdentity: agentIdentity, method: "end_turn", payload: "" });
+        await room.localParticipant.performRpc({
+          destinationIdentity: agentIdentity,
+          method: 'end_turn',
+          payload: '',
+        });
       } else {
       }
       room.localParticipant.setMicrophoneEnabled(false);
@@ -143,7 +146,14 @@ export function useAgentMicrophoneControl() {
 
   // 切换录音状态
   const toggleRecording = useCallback(() => {
-    console.log('🎤 toggleRecording called - isRecording:', isRecording, 'canStartRecording:', canStartRecording, 'agentState:', agentState);
+    console.log(
+      '🎤 toggleRecording called - isRecording:',
+      isRecording,
+      'canStartRecording:',
+      canStartRecording,
+      'agentState:',
+      agentState
+    );
     if (isRecording) {
       stopRecording();
     } else {
@@ -154,16 +164,22 @@ export function useAgentMicrophoneControl() {
   // 监听本地音轨发布/取消发布事件，帮助诊断是否真正上行了音频
   useEffect(() => {
     if (!room) return;
-    const onLocalPublished = (pub: any) => {
+    const onLocalPublished = (pub: LocalTrackPublication) => {
       const kind = pub?.track?.kind ?? pub?.kind;
       if (kind === 'audio') {
-        console.log('🎤 Event LocalTrackPublished (audio):', pub?.track?.sid ?? pub?.trackSid ?? '[no sid]');
+        console.log(
+          '🎤 Event LocalTrackPublished (audio):',
+          pub?.track?.sid ?? pub?.trackSid ?? '[no sid]'
+        );
       }
     };
-    const onLocalUnpublished = (pub: any) => {
+    const onLocalUnpublished = (pub: LocalTrackPublication) => {
       const kind = pub?.track?.kind ?? pub?.kind;
       if (kind === 'audio') {
-        console.log('🎤 Event LocalTrackUnpublished (audio):', pub?.track?.sid ?? pub?.trackSid ?? '[no sid]');
+        console.log(
+          '🎤 Event LocalTrackUnpublished (audio):',
+          pub?.track?.sid ?? pub?.trackSid ?? '[no sid]'
+        );
       }
     };
     room.on(RoomEvent.LocalTrackPublished, onLocalPublished);

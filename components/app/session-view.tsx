@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
+import { useRemoteParticipants } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
 import { ChatTranscript } from '@/components/app/chat-transcript';
 import { PreConnectMessage } from '@/components/app/preconnect-message';
@@ -10,13 +11,12 @@ import {
   AgentControlBar,
   type ControlBarControls,
 } from '@/components/livekit/agent-control-bar/agent-control-bar';
+import { useAgentMicrophoneControl } from '@/hooks/useAgentMicrophoneControl';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
 import { useDebugMode } from '@/hooks/useDebug';
-import { useAgentMicrophoneControl } from '@/hooks/useAgentMicrophoneControl';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../livekit/scroll-area/scroll-area';
-import { useRemoteParticipants } from '@livekit/components-react';
 
 const MotionBottom = motion.create('div');
 
@@ -71,7 +71,7 @@ export const SessionView = ({
   useConnectionTimeout(200_000);
   useDebugMode({ enabled: IN_DEVELOPMENT });
 
-  const { isAgentSpeaking, shouldAllowUserInput} = useAgentMicrophoneControl();
+  const { isAgentSpeaking, shouldAllowUserInput } = useAgentMicrophoneControl();
   const messages = useChatMessages();
   const [chatOpen, setChatOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -79,7 +79,7 @@ export const SessionView = ({
 
   // 参考 getAgentIdentity 逻辑：判断 Agent 是否已入会
   const isAgentJoined =
-    participants.some((p: any) => p.isAgent === true) ||
+    participants.some((p) => p.isAgent === true) ||
     participants.some((p) => typeof p.identity === 'string' && p.identity.startsWith('agent-'));
 
   const controls: ControlBarControls = {
@@ -130,17 +130,17 @@ export const SessionView = ({
         {appConfig.isPreConnectBufferEnabled && (
           <PreConnectMessage messages={messages} className="pb-4" />
         )}
-        
+
         {/* Agent Status Indicator */}
         {isAgentSpeaking && (
           <div className="mb-3 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 text-sm font-medium rounded-full border border-orange-200 dark:border-orange-800/50">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-800 dark:border-orange-800/50 dark:bg-orange-900/30 dark:text-orange-200">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500" />
               Agent 正在说话，请稍等...
             </div>
           </div>
         )}
-        
+
         <div className="bg-background relative mx-auto max-w-2xl pb-3 md:pb-12">
           <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
           <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />

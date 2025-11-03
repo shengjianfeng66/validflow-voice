@@ -49,7 +49,7 @@ export function useRoom(appConfig: AppConfig) {
               'Content-Type': 'application/json',
             },
           });
-          
+
           if (interviewRes.ok) {
             const interviewData = await interviewRes.json();
             outline = interviewData.outline;
@@ -61,11 +61,13 @@ export function useRoom(appConfig: AppConfig) {
         }
 
         // 2. 构造 metadata
-        const metadata = outline ? {
-          prompt_params: {
-            outline: outline
-          }
-        } : undefined;
+        const metadata = outline
+          ? {
+              prompt_params: {
+                outline: outline,
+              },
+            }
+          : undefined;
 
         // 3. 调用 connection-details 接口
         const url = new URL(
@@ -106,7 +108,8 @@ export function useRoom(appConfig: AppConfig) {
     if (room.state === 'disconnected') {
       const { isPreConnectBufferEnabled } = appConfig;
       Promise.all([
-        room.localParticipant.setMicrophoneEnabled(false, undefined, { // 默认关闭麦克风
+        room.localParticipant.setMicrophoneEnabled(false, undefined, {
+          // 默认关闭麦克风
           preConnectBuffer: isPreConnectBufferEnabled,
         }),
         tokenSource
@@ -136,10 +139,10 @@ export function useRoom(appConfig: AppConfig) {
     setIsSessionActive(false);
   }, []);
 
-  return { 
-    room, 
-    isSessionActive, 
-    startSession, 
-    endSession
+  return {
+    room,
+    isSessionActive,
+    startSession,
+    endSession,
   };
 }

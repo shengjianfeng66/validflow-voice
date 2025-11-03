@@ -48,22 +48,24 @@ export function RecordingButton({
       className={cn(
         'min-w-[100px] transition-all duration-200',
         isRecording && 'animate-pulse',
-        isDisabled && 'opacity-50 cursor-not-allowed',
+        isDisabled && 'cursor-not-allowed opacity-50',
         className
       )}
     >
       <div className="flex items-center gap-2">
         {isRecording ? (
           <>
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
             {getButtonText()}
           </>
         ) : (
           <>
-            <div className={cn(
-              'w-2 h-2 rounded-full',
-              canStartRecording ? 'bg-green-500' : 'bg-gray-400'
-            )} />
+            <div
+              className={cn(
+                'h-2 w-2 rounded-full',
+                canStartRecording ? 'bg-green-500' : 'bg-gray-400'
+              )}
+            />
             {getButtonText()}
           </>
         )}
