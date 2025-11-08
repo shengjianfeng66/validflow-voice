@@ -63,10 +63,10 @@ export function useRoom(appConfig: AppConfig) {
         // 2. 构造 metadata
         const metadata = outline
           ? {
-              prompt_params: {
-                outline: outline,
-              },
-            }
+            prompt_params: {
+              outline: outline,
+            },
+          }
           : undefined;
 
         // 3. 调用 connection-details 接口
@@ -112,6 +112,10 @@ export function useRoom(appConfig: AppConfig) {
           // 默认关闭麦克风
           preConnectBuffer: isPreConnectBufferEnabled,
         }),
+        room.localParticipant.setCameraEnabled(true, undefined, {
+          // 默认开启摄像头
+          preConnectBuffer: isPreConnectBufferEnabled,
+        }),
         tokenSource
           .fetch({ agentName: appConfig.agentName })
           .then((connectionDetails) =>
@@ -137,7 +141,8 @@ export function useRoom(appConfig: AppConfig) {
 
   const endSession = useCallback(() => {
     setIsSessionActive(false);
-  }, []);
+    room.disconnect(); // 断开房间连接
+  }, [room]);
 
   return {
     room,

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { useRemoteParticipants } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
@@ -71,6 +72,7 @@ export const SessionView = ({
   useConnectionTimeout(200_000);
   useDebugMode({ enabled: IN_DEVELOPMENT });
 
+  const router = useRouter();
   const { isAgentSpeaking, shouldAllowUserInput } = useAgentMicrophoneControl();
   const messages = useChatMessages();
   const [chatOpen, setChatOpen] = useState(false);
@@ -88,7 +90,7 @@ export const SessionView = ({
     // 如果 Agent 未入会，则不显示聊天输入
     chat: appConfig.supportsChatInput,
     camera: appConfig.supportsVideoInput,
-    screenShare: appConfig.supportsVideoInput,
+    screenShare: false, // 隐藏屏幕共享按钮
   };
 
   useEffect(() => {
@@ -99,6 +101,11 @@ export const SessionView = ({
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const handleDisconnect = () => {
+    router.push('/thank-you'); // 跳转到结束页面
+  };
+
   return (
     <section className="bg-background relative z-10 h-full w-full overflow-hidden" {...props}>
       {/* Chat Transcript：如果 Agent 未入会，则不渲染聊天页面 */}
@@ -143,7 +150,11 @@ export const SessionView = ({
 
         <div className="bg-background relative mx-auto max-w-2xl pb-3 md:pb-12">
           <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
-          <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />
+          <AgentControlBar
+            controls={controls}
+            onChatOpenChange={setChatOpen}
+            onDisconnect={handleDisconnect}
+          />
         </div>
       </MotionBottom>
     </section>

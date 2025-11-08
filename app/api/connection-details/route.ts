@@ -34,8 +34,9 @@ export async function POST(req: Request) {
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
     const metadata = body?.room_config?.metadata;
 
-    // Debug: Log the received metadata
-    // console.log('Received metadata:', JSON.stringify(metadata, null, 2));
+    // Debug: Log the received data
+    console.log('🔍 Request body:', JSON.stringify(body, null, 2));
+    console.log('🤖 Agent name:', agentName);
 
     // Generate participant token
     const participantName = 'user';
@@ -83,12 +84,15 @@ function createParticipantToken(
     canSubscribe: true,
   };
   at.addGrant(grant);
-  // console.log('Generated participant token for:', metadata);
+
   // Set room configuration with agents and metadata
   const roomConfig: Record<string, unknown> = {};
 
   if (agentName) {
+    console.log('✅ Setting agent in room config:', agentName);
     roomConfig.agents = [{ agentName }];
+  } else {
+    console.log('⚠️ No agent name provided');
   }
 
   if (metadata) {
@@ -97,6 +101,7 @@ function createParticipantToken(
   }
 
   if (Object.keys(roomConfig).length > 0) {
+    console.log('📋 Final room config:', JSON.stringify(roomConfig, null, 2));
     at.roomConfig = new RoomConfiguration(roomConfig);
   }
 
