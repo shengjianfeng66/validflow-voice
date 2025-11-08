@@ -15,11 +15,11 @@ interface TalkRoomAppProps {
 
 interface TalkRoomContentProps {
   appConfig: AppConfig;
-  roomId: string;
-  userId: string;
+  name: string;
+  email: string;
 }
 
-function TalkRoomContent({ appConfig, roomId, userId }: TalkRoomContentProps) {
+function TalkRoomContent({ appConfig, name, email }: TalkRoomContentProps) {
   const router = useRouter();
   const { startSession, isSessionActive } = useSession();
 
@@ -43,11 +43,11 @@ function TalkRoomContent({ appConfig, roomId, userId }: TalkRoomContentProps) {
             ← 返回首页
           </Button>
           <div className="text-muted-foreground text-sm">
-            <span className="font-medium">房间：</span>
-            <span className="font-mono">{roomId}</span>
+            <span className="font-medium">姓名：</span>
+            <span className="font-mono">{name}</span>
             <span className="mx-2">|</span>
-            <span className="font-medium">用户：</span>
-            <span className="font-mono">{userId}</span>
+            <span className="font-medium">邮箱：</span>
+            <span className="font-mono">{email}</span>
           </div>
         </div>
       </div>
@@ -63,24 +63,24 @@ function TalkRoomContent({ appConfig, roomId, userId }: TalkRoomContentProps) {
 function TalkRoomSearchParams({ appConfig }: TalkRoomAppProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [roomId, setRoomId] = useState<string>('');
-  const [userId, setUserId] = useState<string>('');
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
 
   useEffect(() => {
-    const roomIdParam = searchParams.get('roomId');
-    const userIdParam = searchParams.get('userId');
+    const nameParam = searchParams.get('name');
+    const emailParam = searchParams.get('email');
 
-    if (!roomIdParam || !userIdParam) {
+    if (!nameParam || !emailParam) {
       // 如果没有必要的参数，重定向到首页
       router.push('/');
       return;
     }
 
-    setRoomId(roomIdParam);
-    setUserId(userIdParam);
+    setName(nameParam);
+    setEmail(emailParam);
   }, [searchParams, router]);
 
-  if (!roomId || !userId) {
+  if (!name || !email) {
     return (
       <div className="flex h-svh items-center justify-center">
         <div className="text-center">
@@ -92,7 +92,7 @@ function TalkRoomSearchParams({ appConfig }: TalkRoomAppProps) {
 
   return (
     <SessionProvider appConfig={appConfig}>
-      <TalkRoomContent appConfig={appConfig} roomId={roomId} userId={userId} />
+      <TalkRoomContent appConfig={appConfig} name={name} email={email} />
       <StartAudio label="Start Audio" />
       <RoomAudioRenderer />
       <Toaster />
