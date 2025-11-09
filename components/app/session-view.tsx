@@ -76,6 +76,7 @@ export const SessionView = ({
   const router = useRouter();
   const { isAgentSpeaking, shouldAllowUserInput } = useAgentMicrophoneControl();
   const messages = useChatMessages();
+  console.log('🚀 ~ messages:', messages);
   const { intervieweeId, responseId, clearInterviewIds } = useInterviewStore();
   const { localParticipant } = useLocalParticipant();
   const [chatOpen, setChatOpen] = useState(true);
@@ -134,15 +135,14 @@ export const SessionView = ({
         return;
       }
 
-      // 格式化消息数据为 OpenAI 标准格式
-      const formattedMessages = messages.map((msg) => {
-        // 根据 isLocal 判断角色：本地用户为 "user"，远程（agent）为 "assistant"
-        const role = msg.from?.isLocal ? 'user' : 'assistant';
+      // 格式化消息数据：先转换为基础格式，然后合并相邻的相同 role
+      const baseMessages = messages.map((msg) => {
+        // 根据 isLocal 判断角色：本地用户为 "user"，远程为 "agent"
+        const role = msg.from?.isLocal ? 'user' : 'agent';
 
         return {
           role,
           content: msg.message,
-          // 保留原始数据作为元数据（可选）
           metadata: {
             id: msg.id,
             timestamp: msg.timestamp,
@@ -152,6 +152,45 @@ export const SessionView = ({
           },
         };
       });
+
+      // 合并相邻的相同 role 的消息
+      const formattedMessages: Array<{
+        role: 'user' | 'agent';
+        words: Array<{ word: string }>;
+        content: string;
+        metadata?: {
+          id: string;
+          timestamp: number;
+          identity?: string;
+          name?: string;
+          editTimestamp?: number;
+        };
+      }> = [];
+
+      for (let i = 0; i < baseMessages.length; i++) {
+        const currentMsg = baseMessages[i];
+        const words: Array<{ word: string }> = [{ word: currentMsg.content }];
+        const contents: string[] = [currentMsg.content];
+
+        // 查找后续相邻的相同 role 的消息
+        let j = i + 1;
+        while (j < baseMessages.length && baseMessages[j].role === currentMsg.role) {
+          words.push({ word: baseMessages[j].content });
+          contents.push(baseMessages[j].content);
+          j++;
+        }
+
+        // 合并消息
+        formattedMessages.push({
+          role: currentMsg.role as 'user' | 'agent',
+          words,
+          content: contents.join(';'),
+          metadata: currentMsg.metadata, // 使用第一个消息的 metadata
+        });
+
+        // 跳过已合并的消息
+        i = j - 1;
+      }
 
       // 调用结束访谈接口
       const response = await fetch('/api/interview/end', {
