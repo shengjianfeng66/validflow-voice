@@ -37,5 +37,6 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,
-  agentName: 'voice-assistant',
+  // agentName: 'voice-assistant',
+  agentName: undefined,
 };
