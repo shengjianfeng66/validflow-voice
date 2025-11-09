@@ -134,18 +134,24 @@ export const SessionView = ({
         return;
       }
 
-      // 格式化消息数据
-      const formattedMessages = messages.map((msg) => ({
-        id: msg.id,
-        timestamp: msg.timestamp,
-        message: msg.message,
-        from: {
-          identity: msg.from?.identity,
-          name: msg.from?.name,
-          isLocal: msg.from?.isLocal,
-        },
-        editTimestamp: msg.editTimestamp,
-      }));
+      // 格式化消息数据为 OpenAI 标准格式
+      const formattedMessages = messages.map((msg) => {
+        // 根据 isLocal 判断角色：本地用户为 "user"，远程（agent）为 "assistant"
+        const role = msg.from?.isLocal ? 'user' : 'assistant';
+
+        return {
+          role,
+          content: msg.message,
+          // 保留原始数据作为元数据（可选）
+          metadata: {
+            id: msg.id,
+            timestamp: msg.timestamp,
+            identity: msg.from?.identity,
+            name: msg.from?.name,
+            editTimestamp: msg.editTimestamp,
+          },
+        };
+      });
 
       // 调用结束访谈接口
       const response = await fetch('/api/interview/end', {
