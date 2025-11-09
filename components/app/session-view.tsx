@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import { useRemoteParticipants } from '@livekit/components-react';
+import { useLocalParticipant, useRemoteParticipants } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
 import { ChatTranscript } from '@/components/app/chat-transcript';
 import { PreConnectMessage } from '@/components/app/preconnect-message';
@@ -77,6 +77,7 @@ export const SessionView = ({
   const { isAgentSpeaking, shouldAllowUserInput } = useAgentMicrophoneControl();
   const messages = useChatMessages();
   const { intervieweeId, responseId, clearInterviewIds } = useInterviewStore();
+  const { localParticipant } = useLocalParticipant();
   const [chatOpen, setChatOpen] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const participants = useRemoteParticipants();
@@ -106,7 +107,26 @@ export const SessionView = ({
   }, [messages]);
 
   const handleDisconnect = async () => {
+    console.log('🔴 开始处理断开连接...');
     try {
+      // 先关闭麦克风和摄像头（必须在断开连接之前）
+      console.log('📹 准备关闭设备，localParticipant:', localParticipant ? '存在' : '不存在');
+      if (localParticipant) {
+        try {
+          console.log('🎤 开始关闭麦克风...');
+          await localParticipant.setMicrophoneEnabled(false);
+          console.log('✅ 麦克风已关闭');
+
+          console.log('📷 开始关闭摄像头...');
+          await localParticipant.setCameraEnabled(false);
+          console.log('✅ 摄像头已关闭');
+        } catch (error) {
+          console.error('❌ 关闭设备时出错:', error);
+        }
+      } else {
+        console.warn('⚠️ localParticipant 不存在，无法关闭设备');
+      }
+
       // 获取存储的 intervieweeId 和 responseId
       if (!intervieweeId || !responseId) {
         console.warn('⚠️ 未找到 intervieweeId 或 responseId，跳过结束接口调用');

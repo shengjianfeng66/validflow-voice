@@ -77,8 +77,11 @@ export function AgentControlBar({
   );
 
   const handleDisconnect = useCallback(async () => {
+    // 先执行 onDisconnect（关闭设备等操作），然后再断开连接
+    if (onDisconnect) {
+      await onDisconnect();
+    }
     endSession();
-    onDisconnect?.();
   }, [endSession, onDisconnect]);
 
   const visibleControls = {
