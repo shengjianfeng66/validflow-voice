@@ -25,6 +25,8 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string>('');
   const [emailTouched, setEmailTouched] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>('');
 
   // 设备权限状态
   const [micPermission, setMicPermission] = useState<'pending' | 'granted' | 'denied'>('pending');
@@ -68,7 +70,7 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
   };
 
   // 邮箱格式验证
-  const validateEmail = (email: string): string => {
+  function validateEmail(email: string): string {
     if (!email.trim()) {
       return '请输入邮箱地址';
     }
@@ -106,7 +108,7 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
     }
 
     return '';
-  };
+  }
 
   // 处理邮箱输入
   const handleEmailChange = (value: string) => {
@@ -122,7 +124,7 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
     setEmailError(validateEmail(email));
   };
 
-  const handleStartCall = () => {
+  const handleStartCall = async () => {
     // 验证邮箱
     const emailValidationError = validateEmail(email);
     if (emailValidationError) {
@@ -131,16 +133,45 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
       return;
     }
 
-    if (name.trim() && email.trim()) {
-      // 导航到 /talk_room 页面，携带姓名和邮箱参数
+    if (!name.trim() || !email.trim()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      // 调用开始访谈接口
+      const response = await fetch('/api/start/interview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '请求失败');
+      }
+
+      // 接口调用成功，导航到 /talk_room 页面
       router.push(
         `/talk_room?name=${encodeURIComponent(name.trim())}&email=${encodeURIComponent(email.trim())}`
       );
+    } catch (error) {
+      console.error('开始访谈失败:', error);
+      setSubmitError(error instanceof Error ? error.message : '开始访谈失败，请重试');
+      setIsSubmitting(false);
     }
   };
 
   const canProceedToUserInfo = micPermission === 'granted';
-  const isStartButtonDisabled = !name.trim() || !email.trim() || !!emailError;
+  const isStartButtonDisabled = !name.trim() || !email.trim() || !!emailError || isSubmitting;
 
   return (
     <motion.div
@@ -156,12 +187,13 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
           className={`flex items-center gap-2 ${step === 'device-setup' ? 'text-primary font-semibold' : 'text-muted-foreground'}`}
         >
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${step === 'device-setup'
-              ? 'border-primary bg-primary text-primary-foreground'
-              : micPermission === 'granted'
-                ? 'border-green-500 bg-green-500 text-white'
-                : 'border-muted-foreground'
-              }`}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+              step === 'device-setup'
+                ? 'border-primary bg-primary text-primary-foreground'
+                : micPermission === 'granted'
+                  ? 'border-green-500 bg-green-500 text-white'
+                  : 'border-muted-foreground'
+            }`}
           >
             {micPermission === 'granted' && step !== 'device-setup' ? (
               <CheckCircleIcon weight="fill" size={20} />
@@ -176,10 +208,11 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
           className={`flex items-center gap-2 ${step === 'user-info' ? 'text-primary font-semibold' : 'text-muted-foreground'}`}
         >
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${step === 'user-info'
-              ? 'border-primary bg-primary text-primary-foreground'
-              : 'border-muted-foreground'
-              }`}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+              step === 'user-info'
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-muted-foreground'
+            }`}
           >
             2
           </div>
@@ -309,12 +342,13 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
                 onChange={(e) => handleEmailChange(e.target.value)}
                 onBlur={handleEmailBlur}
                 placeholder="example@domain.com"
-                className={`border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring rounded-md border px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none ${emailError && emailTouched
-                  ? 'border-red-500 focus:ring-red-500'
-                  : email && !emailError && emailTouched
-                    ? 'border-green-500 focus:ring-green-500'
-                    : ''
-                  }`}
+                className={`border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-ring rounded-md border px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none ${
+                  emailError && emailTouched
+                    ? 'border-red-500 focus:ring-red-500'
+                    : email && !emailError && emailTouched
+                      ? 'border-green-500 focus:ring-green-500'
+                      : ''
+                }`}
               />
               {emailError && emailTouched && (
                 <p className="text-left text-xs text-red-600">{emailError}</p>
@@ -324,12 +358,18 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
               )}
             </div>
 
+            {submitError && (
+              <div className="rounded-md border border-red-500 bg-red-50 p-3 dark:bg-red-900/20">
+                <p className="text-left text-sm text-red-600 dark:text-red-400">{submitError}</p>
+              </div>
+            )}
+
             <div className="mt-4 flex gap-2">
               <Button variant="outline" onClick={() => setStep('device-setup')} className="flex-1">
                 上一步
               </Button>
               <Button onClick={handleStartCall} disabled={isStartButtonDisabled} className="flex-1">
-                {startButtonText}
+                {isSubmitting ? '提交中...' : startButtonText}
               </Button>
             </div>
           </motion.div>
