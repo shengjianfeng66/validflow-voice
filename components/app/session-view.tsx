@@ -17,6 +17,7 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
 import { useDebugMode } from '@/hooks/useDebug';
 import { cn } from '@/lib/utils';
+import { useInterviewStore } from '@/store/interview-store';
 import { ScrollArea } from '../livekit/scroll-area/scroll-area';
 
 const MotionBottom = motion.create('div');
@@ -75,6 +76,7 @@ export const SessionView = ({
   const router = useRouter();
   const { isAgentSpeaking, shouldAllowUserInput } = useAgentMicrophoneControl();
   const messages = useChatMessages();
+  const { intervieweeId, responseId, clearInterviewIds } = useInterviewStore();
   const [chatOpen, setChatOpen] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const participants = useRemoteParticipants();
@@ -103,8 +105,58 @@ export const SessionView = ({
     }
   }, [messages]);
 
-  const handleDisconnect = () => {
-    router.push('/thank-you'); // 跳转到结束页面
+  const handleDisconnect = async () => {
+    try {
+      // 获取存储的 intervieweeId 和 responseId
+      if (!intervieweeId || !responseId) {
+        console.warn('⚠️ 未找到 intervieweeId 或 responseId，跳过结束接口调用');
+        router.push('/thank-you');
+        return;
+      }
+
+      // 格式化消息数据
+      const formattedMessages = messages.map((msg) => ({
+        id: msg.id,
+        timestamp: msg.timestamp,
+        message: msg.message,
+        from: {
+          identity: msg.from?.identity,
+          name: msg.from?.name,
+          isLocal: msg.from?.isLocal,
+        },
+        editTimestamp: msg.editTimestamp,
+      }));
+
+      // 调用结束访谈接口
+      const response = await fetch('/api/interview/end', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          intervieweeId,
+          responseId,
+          messages: formattedMessages,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('结束访谈接口调用失败:', data.error);
+        // 即使接口失败也跳转到结束页面
+      } else {
+        console.log('✅ 访谈记录已保存');
+      }
+
+      // 清除存储的 ID
+      clearInterviewIds();
+    } catch (error) {
+      console.error('结束访谈时发生错误:', error);
+      // 即使出错也跳转到结束页面
+    } finally {
+      router.push('/thank-you'); // 跳转到结束页面
+    }
   };
 
   return (

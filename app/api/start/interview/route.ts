@@ -39,7 +39,7 @@ export async function POST(req: Request) {
           name,
           email,
           intervieweeId: '1234567890',
-          reesponsibleId: '32328372893729873982',
+          responseId: '32328372893729873982',
         },
         message: '访谈已开始',
       },

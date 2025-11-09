@@ -10,6 +10,7 @@ import {
   MicrophoneIcon,
 } from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@/components/livekit/button';
+import { useInterviewStore } from '@/store/interview-store';
 
 interface WelcomeViewProps {
   startButtonText: string;
@@ -20,6 +21,7 @@ type Step = 'device-setup' | 'user-info';
 
 export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
   const router = useRouter();
+  const { setInterviewIds } = useInterviewStore();
   const [step, setStep] = useState<Step>('device-setup');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -157,6 +159,11 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
 
       if (!response.ok) {
         throw new Error(data.error || '请求失败');
+      }
+
+      // 保存 intervieweeId 和 responseId 到 store
+      if (data.data?.intervieweeId && data.data?.responseId) {
+        setInterviewIds(data.data.intervieweeId, data.data.responseId);
       }
 
       // 接口调用成功，导航到 /talk_room 页面
