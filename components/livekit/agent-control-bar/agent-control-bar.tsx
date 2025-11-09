@@ -22,6 +22,7 @@ export interface ControlBarControls {
   microphone?: boolean;
   screenShare?: boolean;
   chat?: boolean;
+  transcript?: boolean;
 }
 
 export interface AgentControlBarProps extends UseInputControlsProps {
@@ -30,7 +31,6 @@ export interface AgentControlBarProps extends UseInputControlsProps {
   onChatOpenChange?: (open: boolean) => void;
   onDeviceError?: (error: { source: Track.Source; error: Error }) => void;
 }
-
 /**
  * A control bar specifically designed for voice assistant interfaces
  */
@@ -87,6 +87,7 @@ export function AgentControlBar({
     screenShare: controls?.screenShare ?? publishPermissions.screenShare,
     camera: controls?.camera ?? publishPermissions.camera,
     chat: controls?.chat ?? publishPermissions.data,
+    transcript: controls?.transcript ?? true,
   };
 
   const isAgentAvailable = participants.some((p) => p.isAgent);
@@ -108,7 +109,6 @@ export function AgentControlBar({
           onSend={handleSendMessage}
         />
       )}
-
       <div className="flex gap-1">
         <div className="flex grow gap-1">
           {/* Toggle Microphone */}
@@ -163,15 +163,17 @@ export function AgentControlBar({
           )}
 
           {/* Toggle Transcript */}
-          <Toggle
-            size="icon"
-            variant="secondary"
-            aria-label="Toggle transcript"
-            pressed={chatOpen}
-            onPressedChange={handleToggleTranscript}
-          >
-            <ChatTextIcon weight="bold" />
-          </Toggle>
+          {visibleControls.transcript && (
+            <Toggle
+              size="icon"
+              variant="secondary"
+              aria-label="Toggle transcript"
+              pressed={chatOpen}
+              onPressedChange={handleToggleTranscript}
+            >
+              <ChatTextIcon weight="bold" />
+            </Toggle>
+          )}
         </div>
 
         {/* Disconnect */}

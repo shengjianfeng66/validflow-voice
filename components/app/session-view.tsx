@@ -75,7 +75,7 @@ export const SessionView = ({
   const router = useRouter();
   const { isAgentSpeaking, shouldAllowUserInput } = useAgentMicrophoneControl();
   const messages = useChatMessages();
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const participants = useRemoteParticipants();
 
@@ -88,9 +88,10 @@ export const SessionView = ({
     leave: true,
     microphone: shouldAllowUserInput, // 根据 agent 状态控制麦克风
     // 如果 Agent 未入会，则不显示聊天输入
-    chat: appConfig.supportsChatInput,
+    chat: false, // 隐藏文本输入按钮
     camera: appConfig.supportsVideoInput,
     screenShare: false, // 隐藏屏幕共享按钮
+    transcript: false, // 隐藏聊天记录切换按钮
   };
 
   useEffect(() => {
