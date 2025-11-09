@@ -58,6 +58,13 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
     }
   };
 
+  // 取消麦克风权限
+  const revokeMicPermission = () => {
+    setMicPermission('pending');
+    setMicDevices([]);
+    setSelectedMicId('');
+  };
+
   // 请求摄像头权限
   const requestCameraPermission = async () => {
     try {
@@ -69,6 +76,11 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
       console.error('摄像头权限被拒绝:', error);
       setCameraPermission('denied');
     }
+  };
+
+  // 取消摄像头权限
+  const revokeCameraPermission = () => {
+    setCameraPermission('pending');
   };
 
   // 邮箱格式验证
@@ -249,10 +261,9 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
                   <span className="font-medium">麦克风</span>
                 </div>
                 {micPermission === 'granted' ? (
-                  <span className="flex items-center gap-1 text-sm text-green-600">
-                    <CheckCircleIcon weight="fill" size={16} />
-                    已授权
-                  </span>
+                  <Button size="sm" variant="outline" onClick={revokeMicPermission}>
+                    取消授权
+                  </Button>
                 ) : micPermission === 'denied' ? (
                   <span className="text-sm text-red-600">权限被拒绝</span>
                 ) : (
@@ -288,10 +299,9 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
                   <span className="font-medium">摄像头（可选）</span>
                 </div>
                 {cameraPermission === 'granted' ? (
-                  <span className="flex items-center gap-1 text-sm text-green-600">
-                    <CheckCircleIcon weight="fill" size={16} />
-                    已授权
-                  </span>
+                  <Button size="sm" variant="outline" onClick={revokeCameraPermission}>
+                    取消授权
+                  </Button>
                 ) : cameraPermission === 'denied' ? (
                   <span className="text-sm text-red-600">权限被拒绝</span>
                 ) : (
@@ -305,6 +315,7 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
             <Button
               onClick={() => setStep('user-info')}
               disabled={!canProceedToUserInfo}
+              variant={canProceedToUserInfo ? 'primary' : 'default'}
               className="mt-4 gap-2"
             >
               下一步
@@ -375,7 +386,12 @@ export const WelcomeView = ({ startButtonText }: WelcomeViewProps) => {
               <Button variant="outline" onClick={() => setStep('device-setup')} className="flex-1">
                 上一步
               </Button>
-              <Button onClick={handleStartCall} disabled={isStartButtonDisabled} className="flex-1">
+              <Button
+                onClick={handleStartCall}
+                disabled={isStartButtonDisabled}
+                variant={!isStartButtonDisabled ? 'primary' : 'default'}
+                className="flex-1"
+              >
                 {isSubmitting ? '提交中...' : startButtonText}
               </Button>
             </div>
