@@ -32,7 +32,19 @@ export async function POST(req: Request) {
     console.log('📝 开始访谈请求:', { name, email });
 
     // 目前先返回成功响应
-    return NextResponse.json({ success: true, message: '访谈已开始' }, { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          name,
+          email,
+          intervieweeId: '1234567890',
+          reesponsibleId: '32328372893729873982',
+        },
+        message: '访谈已开始',
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('❌ 开始访谈接口错误:', error);
     if (error instanceof Error) {
